@@ -1,27 +1,55 @@
-// Part 3: HTML page to draw cards
-let deckId;
-
-async function createNewDeck() {
-    const response = await fetch('https://deckofcardsapi.com/api/deck/new/shuffle/');
-    const data = await response.json();
-    deckId = data.deck_id;
-}
-
-async function drawCard() {
-    const response = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/`);
-    const data = await response.json();
-
-    if (data.success) {
-        const card = data.cards[0];
-        const cardElement = document.createElement('p');
-        cardElement.textContent = `${card.value} of ${card.suit}`;
-        document.getElementById('drawnCards').appendChild(cardElement);
-    } else {
-        alert('No more cards in the deck!');
-    }
-}
-
-document.getElementById('drawCardButton').addEventListener('click', drawCard);
-
-// Initialize by creating a new deck
-createNewDeck();
+$(function() {
+    let baseURL = 'https://deckofcardsapi.com/api/deck';
+  
+    // 1.
+    $.getJSON(`${baseURL}/new/draw/`).then(data => {
+      let { suit, value } = data.cards[0];
+      console.log(`${value.toLowerCase()} of ${suit.toLowerCase()}`);
+    });
+  
+    // 2.
+    let firstCard = null;
+    $.getJSON(`${baseURL}/new/draw/`)
+      .then(data => {
+        firstCard = data.cards[0];
+        let deckId = data.deck_id;
+        return $.getJSON(`${baseURL}/${deckId}/draw/`);
+      })
+      .then(data => {
+        let secondCard = data.cards[0];
+        [firstCard, secondCard].forEach(function(card) {
+          console.log(
+            `${card.value.toLowerCase()} of ${card.suit.toLowerCase()}`
+          );
+        });
+      });
+  
+    // 3.
+    let deckId = null;
+    let $btn = $('button');
+    let $cardArea = $('#card-area');
+  
+    $.getJSON(`${baseURL}/new/shuffle/`).then(data => {
+      deckId = data.deck_id;
+      $btn.show();
+    });
+  
+    $btn.on('click', function() {
+      $.getJSON(`${baseURL}/${deckId}/draw/`).then(data => {
+        let cardSrc = data.cards[0].image;
+        let angle = Math.random() * 90 - 45;
+        let randomX = Math.random() * 40 - 20;
+        let randomY = Math.random() * 40 - 20;
+        $cardArea.append(
+          $('<img>', {
+            src: cardSrc,
+            css: {
+              transform: `translate(${randomX}px, ${randomY}px) rotate(${angle}deg)`
+            }
+          })
+        );
+        if (data.remaining === 0) $btn.remove();
+      });
+    });
+  });
+  
